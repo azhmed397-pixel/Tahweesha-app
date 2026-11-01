@@ -1,6 +1,6 @@
 /* تحويشة v2 — مساعدك الشخصي للتوفير (أوفلاين بالكامل) */
 (()=>{'use strict';
-const KEY='tahweesha_v2', VERSION='2.0.0';
+const KEY='tahweesha_v2', VERSION='3.0.0';
 const EXP=[['food','أكل وشرب','🍔','#f97316'],['trans','مواصلات','🚌','#3b82f6'],['bills','فواتير','💡','#eab308'],['shop','تسوق','🛍️','#ec4899'],['fun','خروج وترفيه','🎉','#8b5cf6'],['health','صحة','💊','#10b981'],['edu','تعليم','📚','#0ea5e9'],['net','موبايل ونت','📱','#6366f1'],['gift','هدايا','🎁','#f43f5e'],['home','البيت','🏠','#a16207'],['coffee','قهوة ومشروبات','☕','#92400e'],['other','أخرى','📦','#64748b']];
 const INC=[['salary','مرتب','💼','#16a34a'],['free','شغل حر','💻','#0d9488'],['allow','مصروف','🪙','#ca8a04'],['igift','هدية','🎁','#db2777'],['iother','أخرى','➕','#475569']];
 const PALETTE=['#f97316','#3b82f6','#eab308','#ec4899','#8b5cf6','#10b981','#0ea5e9','#6366f1','#f43f5e','#84cc16','#14b8a6','#a855f7'];
@@ -25,7 +25,7 @@ const hsh=s=>{let h=5381;for(const c of 'tw$'+s)h=((h<<5)+h+c.charCodeAt(0))|0;r
 // ---------- storage
 let canStore=true,mem=null;
 try{localStorage.setItem('__t','1');localStorage.removeItem('__t');}catch(e){canStore=false;}
-const DEF=()=>({v:2,tx:[],goals:[],budgets:{},debts:[],recurring:[],wallets:[{id:'cash',name:'كاش',emoji:'💵',start:0}],wish:[],gam:[],c52:{base:10,done:[]},customCats:[],templates:[],wishSaved:0,set:{remind:'21:00',notif:false,lastNotif:'',theme:'auto',currency:'ج',saveTarget:20,pin:''}});
+const DEF=()=>({v:2,tx:[],goals:[],budgets:{},debts:[],recurring:[],wallets:[{id:'cash',name:'كاش',emoji:'💵',start:0}],wish:[],gam:[],c52:{base:10,done:[]},customCats:[],templates:[],wishSaved:0,learn:{},dismissSubs:[],set:{remind:'21:00',notif:false,lastNotif:'',theme:'auto',currency:'ج',saveTarget:20,pin:'',hide:false,swipe:true,haptic:true,gHint:false}});
 function normalize(d){const D=DEF();d=(d&&typeof d==='object')?d:{};for(const k in D)if(d[k]==null)d[k]=D[k];d.set=Object.assign(D.set,d.set||{});
   if(!Array.isArray(d.wallets)||!d.wallets.length)d.wallets=D.wallets;d.c52=Object.assign({base:10,done:[]},d.c52||{});
   d.tx=(d.tx||[]).filter(t=>t&&t.date&&t.amount>0).map(t=>Object.assign({wallet:d.wallets[0].id,ts:0,note:''},t));d.v=2;return d;}
@@ -37,7 +37,7 @@ const expCats=()=>EXP.concat(S.customCats.filter(c=>c.type==='exp').map(c=>[c.id
 const incCats=()=>INC.concat(S.customCats.filter(c=>c.type==='inc').map(c=>[c.id,c.name,c.emoji,c.color]));
 const cat=id=>expCats().concat(incCats()).find(c=>c[0]===id)||['other','أخرى','📦','#64748b'];
 const wal=id=>S.wallets.find(w=>w.id===id)||{id:id,name:'محفظة محذوفة',emoji:'👛',start:0};
-const fmt=n=>{n=Math.round((+n||0)*100)/100;return n.toLocaleString('en-US',{maximumFractionDigits:2})+' '+(S.set.currency||'ج');};
+const fmt=n=>{if(S.set.hide)return '•••• '+(S.set.currency||'ج');n=Math.round((+n||0)*100)/100;return n.toLocaleString('en-US',{maximumFractionDigits:2})+' '+(S.set.currency||'ج');};
 const monthTx=m=>S.tx.filter(t=>ym(t.date)===m);
 const sum=(a,type)=>a.reduce((s,t)=>s+(t.type===type?t.amount:0),0);
 const byCat=a=>{const o={};a.forEach(t=>{if(t.type==='exp')o[t.cat]=(o[t.cat]||0)+t.amount;});return o;};
@@ -108,7 +108,7 @@ const empty=(e,t)=>'<div class="empty"><span class="e">'+e+'</span>'+t+'</div>';
 const bar=(p,col)=>'<div class="bar"><i style="width:'+Math.max(0,Math.min(100,p))+'%;'+(col?'background:'+col:'')+'"></i></div>';
 function txRow(t){let ic,ti,col,sign;if(t.type==='tr'){ic='🔄';ti='تحويل: '+esc(wal(t.wallet).name)+' ← '+esc(wal(t.to).name);col='mut';sign='';}else{const c=cat(t.cat);ic=c[2];ti=esc(c[1]);col=t.type==='inc'?'pos':'neg';sign=t.type==='inc'?'+':'−';}
   const bg=t.type==='tr'?'':' style="background:'+cat(t.cat)[3]+'22"';
-  return '<div class="tx"><div class="ic"'+bg+'>'+ic+'</div><div class="m"><div class="t">'+ti+'</div><div class="d">'+dName(t.date)+(S.wallets.length>1&&t.type!=='tr'?' · '+esc(wal(t.wallet).emoji):'')+(t.note?' · '+esc(t.note):'')+'</div></div><div class="a '+col+'">'+sign+fmt(t.amount)+'</div><button class="ibtn" data-a="txEdit" data-id="'+t.id+'" aria-label="تعديل">✏️</button><button class="ibtn" data-a="txDel" data-id="'+t.id+'" aria-label="حذف">🗑</button></div>';}
+  return '<div class="tx" data-id="'+t.id+'"><div class="ic"'+bg+'>'+ic+'</div><div class="m"><div class="t">'+ti+'</div><div class="d">'+dName(t.date)+(S.wallets.length>1&&t.type!=='tr'?' · '+esc(wal(t.wallet).emoji):'')+(t.note?' · '+esc(t.note):'')+'</div></div><div class="a '+col+'">'+sign+fmt(t.amount)+'</div><button class="ibtn" data-a="txEdit" data-id="'+t.id+'" aria-label="تعديل">✏️</button><button class="ibtn" data-a="txDel" data-id="'+t.id+'" aria-label="حذف">🗑</button></div>';}
 function calHTML(m){const dim=daysIn(m),first=new Date(+m.slice(0,4),+m.slice(5,7)-1,1).getDay(),off=(first+1)%7,t=today(),f=firstDate();const ex={};S.tx.forEach(x=>{if(x.type==='exp'&&ym(x.date)===m)ex[x.date]=(ex[x.date]||0)+x.amount;});const mx=Math.max(1,...Object.values(ex));
   let h='<div class="cal">'+['س','ح','ن','ث','ر','خ','ج'].map(d=>'<div class="h">'+d+'</div>').join('');for(let i=0;i<off;i++)h+='<div></div>';
   for(let i=1;i<=dim;i++){const ds=m+'-'+pad(i),v=ex[ds]||0,a=v?.18+.72*(v/mx):0,ns=!v&&ds<t&&ds>=f&&S.tx.length;h+='<button data-a="calDay" data-d="'+ds+'" class="'+(ns?'ns ':'')+(ds===t?'td':'')+'" style="'+(v?'background:rgba(225,29,72,'+a.toFixed(2)+');color:'+(a>.5?'#fff':'inherit'):'')+'" aria-label="'+dName(ds)+' '+fmt(v)+'">'+i+'</button>';}
@@ -157,7 +157,7 @@ function drawRep(){const m=curYM(),tx=monthTx(m),exp=sum(tx,'exp'),bc=byCat(tx),
   if(exp&&$('cDonut')){const ks=Object.keys(bc).sort((a,b)=>bc[b]-bc[a]);C.donut($('cDonut'),ks.map(k=>[bc[k],cat(k)[3]]),fmt(exp),'إجمالي المصاريف');$('lg').innerHTML=ks.map(k=>'<div><i style="background:'+cat(k)[3]+'"></i>'+cat(k)[2]+' '+esc(cat(k)[1])+'<b>'+Math.round(bc[k]/exp*100)+'%</b></div>').join('');}
   const dv=[];for(let i=1;i<=daysIn(m);i++){const ds=m+'-'+pad(i);dv.push(tx.reduce((a,t)=>a+(t.type==='exp'&&t.date===ds?t.amount:0),0));}
   C.bars($('cDaily'),dv.map(v=>[[v,'#14b8a6']]),i=>(i+1)%5===0||i===0?String(i+1):'');
-  const ms=[];for(let k=5;k>=0;k--)ms.push(prevYM(m,k));C.bars($('cMon'),ms.map(x=>{const t=monthTx(x);return [[sum(t,'inc'),'#16a34a'],[sum(t,'exp'),'#e11d48']];}),i=>MONTHS[+ms[i].slice(5,7)-1]);}
+  const ms=[];for(let k=5;k>=0;k--)ms.push(prevYM(m,k));C.bars($('cMon'),ms.map(x=>{const t=monthTx(x);return [[sum(t,'inc'),'#16a34a'],[sum(t,'exp'),'#e11d48']];}),i=>MONTHS[+ms[i].slice(5,7)-1]);drawWd();}
 function vMore(){const T=[['goals','🎯','الأهداف',S.goals.length+' هدف'],['budget','📊','الميزانية',Object.keys(S.budgets).length+' بند'],['wallets','👛','المحافظ',S.wallets.length+' محفظة'],['debts','🤝','الديون والسلف',S.debts.filter(d=>d.paid<d.amount).length+' مفتوح'],['recur','🔁','المتكرر والاشتراكات',S.recurring.length+' عملية'],['wish','🛒','قائمة الأمنيات',S.wish.length+' حاجة'],['gam','🔄','الجمعيات',S.gam.length+' جمعية'],['chal','🏁','التحديات','52 أسبوع وأكتر'],['badges','🏅','الإنجازات',badgeList().filter(b=>b[3]).length+'/'+badgeList().length],['calc','🧮','الحاسبات','7 حاسبات'],['set','⚙️','الإعدادات','وضع ليلي، قفل…']];
   return '<div class="tools">'+T.map(t=>'<button data-go="'+t[0]+'"><span>'+t[1]+'</span>'+t[2]+'<small>'+t[3]+'</small></button>').join('')+'</div><p class="note" style="text-align:center;margin-top:16px">تحويشة v'+VERSION+' · بيشتغل أوفلاين · بياناتك على جهازك بس</p>';}
 function vGoals(){let h='<div class="card">';if(!S.goals.length)h+=empty('🏁','لسه مفيش أهداف. ابدأ بهدف صغير تقدر توصله!');
@@ -253,16 +253,16 @@ const confirmIt=m=>{try{return window.confirm(m);}catch(e){return true;}};
 const A={
  add:()=>addSheet({}),close:closeSheet,
  ntType:b=>{readNT();nt.type=b.dataset.v;addSheet();},
- ntCat:b=>{nt.cat=b.dataset.v;b.parentNode.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));},
+ ntCat:b=>{nt.cat=b.dataset.v;nt.catTouched=true;b.parentNode.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));},
  useTpl:b=>{const t=S.templates.find(x=>x.id===b.dataset.id);if(!t)return;readNT();Object.assign(nt,{cat:t.cat,amount:t.amount,note:t.note,wallet:t.wallet||nt.wallet});addSheet();},
- txSave:()=>{readNT();const amt=num(nt.amount);if(!amt){toast('اكتب المبلغ الأول');$('nA').focus();return;}
+ txSave:()=>{readNT();const amt=calcExpr(nt.amount);if(!amt){toast('اكتب المبلغ الأول');$('nA').focus();return;}
    if(nt.type==='tr'&&nt.wallet===nt.to){toast('اختار محفظتين مختلفتين');return;}
    const rec={type:nt.type,amount:amt,cat:nt.type==='tr'?'':nt.cat,wallet:nt.wallet,note:(nt.note||'').trim(),date:nt.date||today()};if(nt.type==='tr')rec.to=nt.to;
    if(nt.edit){const t=S.tx.find(x=>x.id===nt.edit);if(t){delete t.to;Object.assign(t,rec);}}else S.tx.push(Object.assign({id:uid(),ts:Date.now()},rec));
    if($('nTpl')&&$('nTpl').checked)S.templates.push({id:uid(),type:rec.type,cat:rec.cat,amount:amt,note:rec.note,wallet:rec.wallet});
    save();closeSheet();let msg=nt.edit?'✅ اتعدّلت':'✅ اتسجّلت';const bud=S.budgets[rec.cat];
    if(rec.type==='exp'&&bud){const sp=byCat(monthTx(ym(rec.date)))[rec.cat]||0;if(sp>bud)msg='⚠️ عدّيت ميزانية '+cat(rec.cat)[1];else if(sp>=.8*bud)msg='🟠 قرّبت تخلّص ميزانية '+cat(rec.cat)[1];}
-   toast(msg);render();},
+   if(!nt.edit&&rec.type!=='tr'){const nr=S.tx[S.tx.length-1];learnFrom(nr);const u=unusual(nr);if(u)msg+=' · 😮 أعلى من المعتاد (عادةً '+fmt(u)+')';}haptic(15);toast(msg);render();},
  txEdit:b=>{const t=S.tx.find(x=>x.id===b.dataset.id);if(t)addSheet({type:t.type,cat:t.cat,wallet:t.wallet,to:t.to,amount:t.amount,note:t.note,date:t.date,edit:t.id});},
  txDel:b=>{const i=S.tx.findIndex(x=>x.id===b.dataset.id);if(i<0)return;lastDeleted=S.tx.splice(i,1)[0];save();render();toast('🗑 اتحذفت','تراجع',()=>{S.tx.push(lastDeleted);save();render();});},
  txType:b=>{ui.txType=b.dataset.v;render();},clearDay:()=>{ui.txDay='';render();},
@@ -334,6 +334,218 @@ function demo(){const d=new Date();if(S.wallets.length<2)S.wallets.push({id:'ban
   if(!S.debts.length)S.debts.push({id:uid(),kind:'lent',person:'أحمد',amount:500,paid:200,due:'',note:'',added:today()});
   if(!S.wish.length)S.wish.push({id:uid(),name:'سماعة لاسلكي',emoji:'🎧',price:1800,added:addDays(today(),-5)});
   if(!S.gam.length)S.gam.push({id:uid(),name:'جمعية الشغل',monthly:1000,members:10,start:prevYM(ym(today()),2),myTurn:5});}
+// ========== 🧠 العقل الذكي (v3) ==========
+const AR=s=>String(s==null?'':s).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[\u064B-\u0652\u0640]/g,'').toLowerCase();
+const KW={food:'اكل غدا غداء عشا عشاء فطار فطور مطعم سندوتش سندوتشات فول طعميه كشري بيتزا برجر فراخ لحمه سمك خضار فاكهه عيش بقاله سوبرماركت ماركت حلويات حلو شيبسي بيبسي كانز طلبات ديليفري دليفري كنتاكي ماكدونالدز شاورما كفته كباب جبنه لبن بيض رز مكرونه زيت سكر تموين وجبه',
+ coffee:'قهوه كافيه شاي نسكافيه ستاربكس عصير مشروب كابتشينو لاتيه كوفي',
+ trans:'مواصلات اوبر كريم تاكسي ميكروباص مترو اتوبيس بنزين سولار عربيه توكتوك تكتك قطر قطار باص جراج ركنه اندرايف ديدي سويفل اجره',
+ bills:'كهربا كهرباء غاز فاتوره ايجار صيانه عداد مياه',
+ shop:'هدوم لبس جزمه شنطه تيشيرت بنطلون قميص شوز مول امازون نون فستان ساعه جاكيت',
+ fun:'سينما خروجه فسحه رحله بلايستيشن العاب نادي حفله مصيف شيشه ملاهي ماتش',
+ health:'دكتور صيدليه دوا دواء علاج تحاليل اشعه مستشفي كشف عياده اسنان جيم فيتامين',
+ edu:'كتاب كتب كورس درس دروس مدرسه جامعه سنتر ملازم مذكرات كراسه ادوات',
+ net:'شحن رصيد كارت باقه نت انترنت موبايل فودافون اورنج اتصالات نتفليكس شاهد سبوتيفاي يوتيوب اشتراك',
+ gift:'هديه عيديه نقطه فرح',
+ home:'البيت بيت منظفات مسحوق صابون اثاث مطبخ سباك نجار',
+ salary:'مرتب راتب قبضت قبض',
+ free:'شغل فريلانس مشروع عميل بيعت عموله بونص مكافاه',
+ igift:'هديه عيديه'};
+const INC_RX=/(قبضت|مرتب|راتب|استلمت|جالي|جاتلي|كسبت|مكافاه|بونص|عموله|بيعت|دخلي|دخل )/;
+const toks=s=>AR(s).split(/[^\u0621-\u064Aa-z0-9]+/).filter(w=>w.length>=2&&!/^\d+$/.test(w));
+const stem=w=>w.replace(/^(وال|بال|لل|ال)(?=..)/,'');
+function guessCat(text,type){const list=(type==='inc'?incCats():expCats()).map(c=>c[0]),sc={};
+  toks(text).forEach(w=>{const ws=[w,stem(w)];
+    ws.forEach(x=>{const L=S.learn[x];if(L)for(const k in L)if(list.includes(k))sc[k]=(sc[k]||0)+3*L[k];});
+    for(const k in KW){if(!list.includes(k))continue;if(KW[k].split(' ').some(kw=>ws.includes(kw)||(kw.length>3&&ws.some(x=>x.startsWith(kw)))))sc[k]=(sc[k]||0)+2;}
+    S.customCats.forEach(c=>{if(list.includes(c.id)&&ws.includes(AR(c.name)))sc[c.id]=(sc[c.id]||0)+4;});});
+  let best=null,bv=0;for(const k in sc)if(sc[k]>bv){bv=sc[k];best=k;}return best;}
+function learnFrom(r){if(!r||r.type==='tr'||!r.note)return;if(Object.keys(S.learn).length>900)return;
+  toks(r.note.replace(/🔁/g,'')).slice(0,4).forEach(w=>{w=stem(w);const L=S.learn[w]=S.learn[w]||{};L[r.cat]=(L[r.cat]||0)+1;});}
+const NUMW={'عشره':10,'عشرين':20,'تلاتين':30,'اربعين':40,'خمسين':50,'ستين':60,'سبعين':70,'تمانين':80,'تسعين':90,'ميه':100,'ميت':100,'ميتين':200,'تلتميه':300,'ربعميه':400,'خمسميه':500,'ستميه':600,'سبعميه':700,'تمنميه':800,'تسعميه':900,'الف':1000,'الفين':2000};
+const DROPW=/^(ب|بـ|ج|جم|جنيه|جنيهات|ك|k|الف|الاف|امبارح|النهارده|انهارده|دلوقتي)$/;
+function parseQuick(raw){const r0=String(raw||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g,'.').replace(/(\d),(\d{3})/g,'$1$2');let s=AR(r0),amount=0;
+  const m=s.match(/(\d+(?:\.\d+)?)(?:\s*(k|الاف|الف|ك)(?=\s|$))?/);
+  if(m){amount=parseFloat(m[1])*(m[2]?1000:1);s=s.replace(m[0],' ');}else{const ws=s.split(/\s+/);for(const w of ws){const x=w.replace(/^ب/,'');if(NUMW[x]){amount=NUMW[x];s=s.replace(w,' ');break;}}}
+  let date=today();if(/اول امبارح/.test(s)){date=addDays(today(),-2);s=s.replace(/اول امبارح/,' ');}else if(/امبارح/.test(s)){date=addDays(today(),-1);s=s.replace(/امبارح/,' ');}
+  const type=INC_RX.test(' '+s+' ')?'inc':'exp';const wsAll=r0.split(/\s+/);
+  const note=wsAll.filter((w,i)=>{const a=AR(w).replace(/[^\u0621-\u064Aa-z0-9.]/g,'');if(!a)return false;if(DROPW.test(a)||NUMW[a]||NUMW[a.replace(/^ب/,'')]||/^ب?\d/.test(a))return false;if(a==='اول'&&AR(wsAll[i+1]||'')==='امبارح')return false;return true;}).join(' ').slice(0,60);
+  const cat=guessCat(s,type)||(type==='inc'?(/مرتب|راتب|قبضت/.test(s)?'salary':'iother'):'other');
+  return {type,amount,cat,note,date};}
+function calcExpr(v){let s=String(v==null?'':v).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٫,]/g,'.').replace(/×|x/gi,'*').replace(/÷/g,'/').replace(/\s/g,'');
+  if(!/[+\-*/]/.test(s.replace(/^-/,'')))return num(s);if(!/^[\d.+\-*/()]+$/.test(s))return num(s);
+  try{const r=Function('"use strict";return ('+s+')')();return isFinite(r)&&r>0?Math.round(r*100)/100:0;}catch(e){return 0;}}
+function median(a){if(!a.length)return 0;a=a.slice().sort((x,y)=>x-y);const h=a.length>>1;return a.length%2?a[h]:(a[h-1]+a[h])/2;}
+function unusual(r){if(r.type!=='exp')return 0;const from=addDays(today(),-120),a=S.tx.filter(t=>t.type==='exp'&&t.cat===r.cat&&t.date>=from&&t!==r&&t.id!==r.id).map(t=>t.amount);
+  if(a.length<4)return 0;const md=median(a);return (r.amount>2.5*md&&r.amount-md>50)?md:0;}
+function forecast(){const m=ym(today()),tx=monthTx(m),d=new Date().getDate(),dim=daysIn(m),t=today(),exp=sum(tx,'exp'),inc=sum(tx,'inc');
+  const isRec=x=>/🔁$/.test(x.note||'');const fixed=tx.filter(x=>x.type==='exp'&&isRec(x)).reduce((a,x)=>a+x.amount,0),vari=exp-fixed;
+  const upE=S.recurring.filter(r=>r.active&&r.type==='exp'&&r.next&&ym(r.next)===m&&r.next>t).reduce((a,r)=>a+r.amount,0);
+  const upI=S.recurring.filter(r=>r.active&&r.type==='inc'&&r.next&&ym(r.next)===m&&r.next>t).reduce((a,r)=>a+r.amount,0);
+  const recM=S.recurring.filter(r=>r.active&&r.type==='exp').reduce((s,r)=>s+monthlyOf(r),0),hist=Math.max(0,avgMonthlyExp()-recM),pace=vari/Math.max(d,3)*dim,al=Math.min(1,d/12),hasHist=[1,2,3].some(k=>sum(monthTx(prevYM(m,k)),'exp')>0);
+  const proj=fixed+upE+(hasHist?al*pace+(1-al)*Math.max(vari,hist):pace),projInc=inc+upI,bc={};tx.forEach(x=>{if(x.type==='exp'&&!isRec(x))bc[x.cat]=(bc[x.cat]||0)+x.amount;});const warn=[];
+  Object.keys(S.budgets).forEach(k=>{const b=S.budgets[k],sp=byCat(tx)[k]||0;if(sp>=b)return;const rate=(bc[k]||0)/d;if(rate>0&&d>=5){const day=Math.ceil((b-(sp-(bc[k]||0)))/rate);if(day<=dim&&day>d)warn.push([k,day]);}});
+  return {proj,projInc,projSave:projInc-proj,warn,exp,inc,day:d,dim};}
+function avgInc(){const m=ym(today());let s=0,c=0;for(let k=0;k<=3;k++){const i=sum(monthTx(prevYM(m,k)),'inc');if(i>0){s+=i;c++;}}return c?s/c:0;}
+function avgSave(){const m=ym(today());let s=0,c=0;for(let k=1;k<=3;k++){const t=monthTx(prevYM(m,k)),i=sum(t,'inc');if(i>0){s+=i-sum(t,'exp');c++;}}if(!c){const f=forecast();return f.projInc>0?f.projSave:0;}return s/c;}
+function health(){if(S.tx.length<3)return null;const m=ym(today());let inc=0,exp=0;for(let k=0;k<=2;k++){const t=monthTx(prevYM(m,k));inc+=sum(t,'inc');exp+=sum(t,'exp');}
+  const P=[],cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const r=inc>0?(inc-exp)/inc:-1;P.push(['💰','نسبة التوفير',Math.round(cl(r/.2,0,1)*30),30,inc>0?Math.round(r*100)+'% من دخلك':'سجّل دخلك']);
+  const av=avgMonthlyExp(),em=av>0?totalBal()/av:0;P.push(['🛟','صندوق الطوارئ',Math.round(cl(em/3,0,1)*20),20,em.toFixed(1)+' شهر مصاريف']);
+  const bk=Object.keys(S.budgets),bc=byCat(monthTx(m));const ok=bk.filter(k=>(bc[k]||0)<=S.budgets[k]).length;P.push(['📊','الالتزام بالميزانية',bk.length?Math.round(ok/bk.length*15):5,15,bk.length?ok+' من '+bk.length+' بند تمام':'محطتش ميزانية']);
+  const owe=S.debts.filter(d=>d.kind==='borrowed').reduce((a,d)=>a+Math.max(0,d.amount-d.paid),0),mi=inc/3||avgInc();const dr=mi>0?owe/mi:(owe?9:0);P.push(['🤝','الديون',Math.round(cl(1-dr/2,0,1)*15),15,owe?fmt(owe)+' عليك':'مفيش ديون عليك 👏']);
+  const ds=new Set(S.tx.map(t=>t.date));let lg=0;for(let i=0;i<14;i++)if(ds.has(addDays(today(),-i)))lg++;P.push(['✍️','انتظام التسجيل',Math.round(lg/14*10),10,lg+' يوم من آخر 14']);
+  const gs=S.goals.length?S.goals.reduce((a,g)=>a+Math.min(1,g.saved/g.target),0)/S.goals.length:0;P.push(['🎯','الأهداف',S.goals.length?Math.round(4+gs*6):0,10,S.goals.length?Math.round(gs*100)+'% متوسط التقدم':'حط هدف']);
+  const sc=P.reduce((a,p)=>a+p[2],0);const g=sc>=80?['ممتاز','#16a34a']:sc>=60?['كويس','#65a30d']:sc>=40?['محتاج شغل','#d97706']:['خطر','#e11d48'];return {sc,P,g};}
+function detectSubs(){const g={};S.tx.forEach(t=>{if(t.type!=='exp'||!t.note||/🔁$/.test(t.note))return;const k=AR(t.note).trim()+'|'+Math.round(t.amount);const o=g[k]=g[k]||{n:t.note,a:t.amount,cat:t.cat,w:t.wallet,ms:new Set(),last:t.date};o.ms.add(ym(t.date));if(t.date>o.last)o.last=t.date;});
+  return Object.values(g).filter(x=>x.ms.size>=2&&!S.recurring.some(r=>AR(r.name)===AR(x.n))&&!S.dismissSubs.includes(AR(x.n))).slice(0,3);}
+function afford(p,name){const bal=totalBal(),st=safeToday(),f=forecast(),ai=avgInc(),as=avgSave(),L=[];let v='ok';
+  if(p>bal){v='no';L.push('❌ رصيدك كله '+fmt(bal)+' — مش هتقدر تشتريها دلوقتي من غير ما تستلف.');}
+  else if(f.projInc>0&&f.projSave-p<0){v='warn';L.push('⚠️ لو اشتريتها هتخلّص الشهر بعجز حوالي '+fmt(p-f.projSave)+'.');}
+  else if(st&&p<=st.left){L.push('✅ آه تقدر — في حدود المسموح بيه النهارده ('+fmt(st.left)+').');}
+  else if(f.projInc>0){v='mid';L.push('🟡 تقدر، بس توفيرك المتوقع الشهر ده هيقل من '+fmt(f.projSave)+' لـ '+fmt(f.projSave-p)+'.');}
+  else L.push('🟡 رصيدك يسمح ('+fmt(bal)+')، بس سجّل دخلك عشان أحسبهالك صح.');
+  if(ai>0)L.push('⏱️ دي تساوي تقريبًا '+Math.max(1,Math.round(p/(ai/176)))+' ساعة شغل من وقتك.');
+  const g=S.goals.find(x=>x.saved<x.target);if(g&&as>0)L.push('🎯 هتأخّر هدف «'+g.name+'» حوالي '+Math.max(1,Math.round(p/as*30))+' يوم.');
+  if(p>=1000&&v!=='no')L.push('🧊 نصيحة: حطها في قائمة الأمنيات واستنى 30 يوم — لو لسه عايزها اشتريها وانت مرتاح.');
+  else if(v!=='no')L.push('🧊 نصيحة: استنى يومين قبل ما تشتري — لو لسه عايزها يبقى تستاهل.');
+  return {v,L};}
+// ---------- 💬 المساعد
+function periodOf(a){const t=today(),m=ym(t);
+  if(/النهارده|انهارده|اليوم/.test(a))return [t,t,'النهارده'];if(/اول امبارح/.test(a)){const d=addDays(t,-2);return [d,d,'أول امبارح'];}if(/امبارح/.test(a)){const d=addDays(t,-1);return [d,d,'امبارح'];}
+  if(/الاسبوع اللي فات|الاسبوع الماضي/.test(a))return [addDays(t,-13),addDays(t,-7),'الأسبوع اللي فات'];if(/الاسبوع|اسبوع|7 ايام/.test(a))return [addDays(t,-6),t,'آخر 7 أيام'];
+  if(/الشهر اللي فات|الشهر الماضي|الشهر الي فات/.test(a)){const p=prevYM(m);return [p+'-01',p+'-'+pad(daysIn(p)),'الشهر اللي فات'];}
+  if(/السنه|سنه/.test(a)){const y=t.slice(0,4);return [y+'-01-01',t,'السنة دي'];}
+  for(let i=0;i<12;i++)if(a.includes(AR(MONTHS[i]))){const y=+t.slice(0,4)-((i+1)>+t.slice(5,7)?1:0),mm=y+'-'+pad(i+1);return [mm+'-01',mm+'-'+pad(daysIn(mm)),MONTHS[i]];}
+  return [m+'-01',t,'الشهر ده'];}
+function answer(q){const a=' '+AR(q)+' ',T=S.tx;if(!a.trim())return 'اكتب سؤالك 🙂';
+  const n=(a.match(/(\d+(?:\.\d+)?)\s*(k|الف|ك)?/)||[]);const N=n[1]?parseFloat(n[1])*(n[2]?1000:1):0;
+  if(/(اهلا|هاي|السلام|ازيك|صباح|مساء)/.test(a)&&a.length<20)return 'أهلًا بيك 👋 أنا تحويشة، اسألني عن مصاريفك أو رصيدك أو لو تقدر تشتري حاجة.';
+  if(N&&/(اقدر|ينفع|اشتري|هشتري|اجيب|اشتري)/.test(a)){const r=afford(N);return r.L.join('\n');}
+  if(/(صحه|سكور|تقييم|درجه|حالتي الماليه|وضعي)/.test(a)){const h=health();if(!h)return 'سجّل كام عملية الأول وأنا أقيّملك وضعك 📊';return 'درجتك المالية: '+h.sc+'/100 — '+h.g[0]+'\n'+h.P.map(p=>p[0]+' '+p[1]+': '+p[2]+'/'+p[3]+' ('+p[4]+')').join('\n');}
+  if(/(توقع|اخر الشهر|نهايه الشهر|هقفل)/.test(a)){const f=forecast();return '🔮 بالمعدّل ده هتصرف حوالي '+fmt(f.proj)+' الشهر ده'+(f.projInc>0?' وهتوفّر '+fmt(f.projSave)+(f.projSave<0?' (يعني عجز ⚠️)':' ✅'):'')+'.'+(f.warn.length?'\n'+f.warn.map(w=>'⚠️ هتعدّي ميزانية '+cat(w[0])[1]+' يوم '+w[1]).join('\n'):'');}
+  if(/(هدف|اهداف|هوصل|احوش|احوش)/.test(a)){if(!S.goals.length)return 'لسه مفيش أهداف — ضيف هدف من «المزيد ← الأهداف» 🎯';const as=avgSave();
+    return S.goals.map(g=>{const r=g.target-g.saved;if(r<=0)return '✅ '+g.name+': خلصته 🎉';let s='🎯 '+g.name+': فاضل '+fmt(r);if(g.deadline){const mo=Math.max(1,Math.ceil(diffDays(today(),g.deadline)/30));s+=' — محتاج '+fmt(r/mo)+' في الشهر عشان تلحق ميعادك';}else if(as>0)s+=' — بتوفيرك الحالي هتوصل خلال ~'+Math.ceil(r/as)+' شهر';return s;}).join('\n');}
+  if(/(دين|ديون|سلف|عليا|ليا|مديون)/.test(a)){const o=S.debts.filter(d=>d.paid<d.amount);if(!o.length)return 'مفيش ديون مفتوحة 👏';const b=o.filter(d=>d.kind==='borrowed'),l=o.filter(d=>d.kind!=='borrowed');const rs=x=>x.reduce((s,d)=>s+d.amount-d.paid,0);
+    return '❤️ عليك: '+fmt(rs(b))+(b.length?' ('+b.map(d=>d.person).join('، ')+')':'')+'\n💚 ليك: '+fmt(rs(l))+(l.length?' ('+l.map(d=>d.person).join('، ')+')':'');}
+  if(/(اشتراك|اشتراكات|متكرر|ثابت)/.test(a)){const r=S.recurring.filter(x=>x.active&&x.type==='exp');if(!r.length)return 'مفيش مصاريف متكررة متسجلة.';const tot=r.reduce((s,x)=>s+monthlyOf(x),0);return '🔁 مصاريفك الثابتة '+fmt(tot)+' في الشهر ('+fmt(tot*12)+' في السنة):\n'+r.map(x=>'• '+x.name+' '+fmt(x.amount)).join('\n');}
+  if(/(نصيحه|نصايح|اوفر|ازاي|ساعدني)/.test(a)){const tp=tips(ym(today()));return tp.slice(0,3).map(t=>t[0]+' '+t[1]).join('\n\n')||'كمّل كده 👏';}
+  const pr=periodOf(a),inP=t=>t.date>=pr[0]&&t.date<=pr[1];
+  if(/(اكتر|اعلي|فين فلوسي|بتروح فين|بصرف علي ايه)/.test(a)){const bc=byCat(T.filter(inP)),ks=Object.keys(bc).sort((x,y)=>bc[y]-bc[x]).slice(0,5);if(!ks.length)return 'مفيش مصاريف في '+pr[2]+'.';const tot=Object.values(bc).reduce((s,v)=>s+v,0);return '📊 أكتر حاجات صرفت عليها ('+pr[2]+'):\n'+ks.map((k,i)=>(i+1)+'. '+cat(k)[2]+' '+cat(k)[1]+' — '+fmt(bc[k])+' ('+Math.round(bc[k]/tot*100)+'%)').join('\n');}
+  if(/(رصيد|معايا|فاضل|متبقي|فلوسي كام)/.test(a)){const st=safeToday();return '👛 رصيدك الكلي: '+fmt(totalBal())+(S.wallets.length>1?'\n'+S.wallets.map(w=>w.emoji+' '+w.name+': '+fmt(walletBal(w.id))).join('\n'):'')+(st?'\n💸 تقدر تصرف النهارده: '+fmt(Math.max(0,st.left)):'');}
+  if(/(دخلي|قبضت|دخل|كسبت)/.test(a)){const x=T.filter(t=>t.type==='inc'&&inP(t));return '⬆️ دخلك في '+pr[2]+': '+fmt(sum(x,'inc'))+' ('+x.length+' عملية)';}
+  if(/(صرفت|مصاريف|مصروف|دفعت|كام)/.test(a)){const c=guessCat(a.replace(/صرفت|مصاريف|مصروفات|دفعت|كام|علي/g,' '),'exp');const x=T.filter(t=>t.type==='exp'&&inP(t)&&(!c||t.cat===c));const s=sum(x,'exp');
+    let r='⬇️ صرفت '+(c?'على '+cat(c)[2]+' '+cat(c)[1]+' ':'')+'في '+pr[2]+': '+fmt(s)+' ('+x.length+' عملية)';if(x.length){const mx=x.reduce((p,t)=>t.amount>p.amount?t:p);r+='\n📌 أكبر عملية: '+fmt(mx.amount)+(mx.note?' — '+mx.note:'')+' ('+dName(mx.date)+')';}
+    if(/الشهر ده/.test(pr[2])&&(!c||new Date().getDate()>=7)){const f=forecast();r+='\n🔮 متوقع توصل لـ '+fmt(c?s/f.day*f.dim:f.proj)+' آخر الشهر';}return r;}
+  return '🤔 مفهمتش قوي. جرّب تسألني:\n• صرفت كام على الأكل الشهر ده؟\n• أقدر أشتري موبايل بـ 8000؟\n• رصيدي كام؟\n• هوصل لهدفي امتى؟\n• توقع آخر الشهر\n• حالتي المالية\n• بصرف على إيه أكتر؟';}
+const chat=[];
+function chatHTML(){return chat.map(m=>'<div class="msg '+m[0]+'">'+esc(m[1]).replace(/\n/g,'<br>')+'</div>').join('')||'<div class="msg bot">أهلًا 👋 أنا تحويشة — اسألني أي حاجة عن فلوسك، وكل ده بيتحسب على جهازك من غير نت.</div>';}
+function askSheet(){const Q=['صرفت كام الشهر ده؟','بصرف على إيه أكتر؟','رصيدي كام؟','أقدر أشتري حاجة بـ 2000؟','توقع آخر الشهر','حالتي المالية','هوصل لهدفي امتى؟','ديوني'];
+  openSheet('<h3 class="hx">💬 اسأل تحويشة <button class="ibtn" data-a="close" aria-label="إغلاق">✕</button></h3><div class="chat" id="chat">'+chatHTML()+'</div><div class="qchips">'+Q.map(q=>'<button data-a="askChip" data-q="'+esc(q)+'">'+esc(q)+'</button>').join('')+'</div><div class="qrow"><input class="inp" id="askIn" placeholder="اكتب سؤالك…" autocomplete="off"><button class="btn qgo" data-a="ask" aria-label="إرسال">➤</button></div>');
+  const c=$('chat');if(c)c.scrollTop=1e6;}
+function doAsk(q){q=String(q||'').trim();if(!q)return;chat.push(['me',q]);chat.push(['bot',answer(q)]);if(chat.length>40)chat.splice(0,2);const c=$('chat');if(c){c.innerHTML=chatHTML();c.scrollTop=1e6;}const i=$('askIn');if(i){i.value='';}haptic();}
+function affordSheet(){openSheet('<h3>🤔 أقدر أشتريها؟</h3><p class="note">اكتب السعر وأنا أحسبلك تأثيرها على شهرك وأهدافك.</p>'+F('afN','بتفكر تشتري إيه؟','maxlength="40" placeholder="مثلاً: سماعة"')+F('afP','السعر','class="inp amt" inputmode="decimal" placeholder="0"')+'<div id="afR"></div><div class="acts"><button class="btn" data-a="affordGo">احسبها</button><button class="btn sec" data-a="close">إغلاق</button></div>');}
+// ---------- 🏠 كروت ذكية
+function quickBar(){return '<div class="card qa"><div class="qrow"><input class="inp" id="qIn" placeholder="✨ اكتب بسرعة: غدا 85 · قبضت 8000 · بنزين 300 امبارح" autocomplete="off" enterkeyhint="done">'+(SR?'<button class="ibtn mic" data-a="mic" aria-label="سجّل بصوتك">🎤</button>':'')+'<button class="btn qgo" data-a="quick" aria-label="سجّل">➕</button></div><div class="qprev" id="qPrev"></div></div>';}
+function smartCard(){const h=health(),cm=curYM()===ym(today());let s='<div class="card brain"><h2>🧠 تحليل ذكي <button class="btn sec sm" data-a="askOpen">💬 اسألني</button></h2>';
+  if(h)s+='<div class="hs" data-a2="health"><div class="ring" style="--p:'+h.sc+';--c:'+h.g[1]+'"><b>'+h.sc+'</b></div><div><div class="t">درجتك المالية: <b style="color:'+h.g[1]+'">'+h.g[0]+'</b></div><div class="note">'+h.P.slice().sort((a,b)=>a[2]/a[3]-b[2]/b[3])[0].slice(0,2).join(' ')+' هو أكتر حاجة محتاجة شغل</div><button class="btn sec sm" data-a="healthOpen">التفاصيل</button></div></div>';
+  if(cm&&S.tx.length){const f=forecast();if(f.exp>0)s+='<div class="tip"><span class="e">🔮</span><div>متوقع تصرف <b>'+fmt(f.proj)+'</b> الشهر ده'+(f.projInc>0?'، وتوفّر <b class="'+(f.projSave<0?'neg':'pos')+'">'+fmt(f.projSave)+'</b>':'')+'.</div></div>';
+    f.warn.slice(0,2).forEach(w=>{s+='<div class="tip"><span class="e">⚠️</span><div>بالمعدّل ده هتعدّي ميزانية '+cat(w[0])[2]+' '+esc(cat(w[0])[1])+' يوم <b>'+w[1]+'</b> — هدّي شوية.</div></div>';});}
+  detectSubs().forEach(x=>{s+='<div class="tip"><span class="e">🔁</span><div>«'+esc(x.n)+'» بـ '+fmt(x.a)+' بتتكرر كل شهر. أخليها تتسجّل لوحدها؟<div class="acts2"><button class="btn sm" data-a="subAdd" data-n="'+esc(x.n)+'">آه</button><button class="btn sec sm" data-a="subNo" data-n="'+esc(x.n)+'">لأ</button></div></div></div>';});
+  s+='<div class="acts2"><button class="btn sec sm" data-a="affordOpen">🤔 أقدر أشتريها؟</button></div>';
+  return s+'</div>';}
+function homeV3(){let h=vHome();const i=h.indexOf('<div class="stats">');const sc=smartCard();h=i>=0?h.slice(0,i)+sc+h.slice(i):h+sc;
+  if(!S.set.gHint)h='<div class="banner ok gh">👆 <div><b>جديد!</b> اسحب يمين/شمال تتنقل بين الصفحات · اسحب العملية شمال تمسحها ويمين تعدّلها · دوس مطوّل للمزيد · زرار الرجوع بتاع الموبايل شغال · دبل كليك على الرصيد يخفي الأرقام</div><button data-a="ghOk">تمام</button></div>'+h;
+  return quickBar()+h;}
+function repV3(){let h='';const m=curYM(),tx=monthTx(m),exp=sum(tx,'exp');
+  if(S.tx.length){const from=addDays(today(),-90),wd=[0,0,0,0,0,0,0],wc=[0,0,0,0,0,0,0];for(let i=0;i<91;i++){const d=addDays(today(),-i);if(d<firstDate())break;wc[new Date(d+'T12:00').getDay()]++;}
+    S.tx.forEach(t=>{if(t.type==='exp'&&t.date>=from)wd[new Date(t.date+'T12:00').getDay()]+=t.amount;});const av=wd.map((v,i)=>wc[i]?v/wc[i]:0),mx=av.indexOf(Math.max(...av));
+    h+='<div class="card"><h2>📆 بتصرف أكتر إمتى؟ <small>آخر 3 شهور</small></h2><canvas id="cWd" height="150"></canvas>'+(av[mx]>0?'<p class="note">أغلى يوم عندك: <b>'+DAYS[mx]+'</b> (متوسط '+fmt(av[mx])+') — خطّط له من بدري.</p>':'')+'</div>';
+    const ins=[];const bc=byCat(tx),top=Object.keys(bc).sort((a,b)=>bc[b]-bc[a])[0];if(top)ins.push(['✂️','لو قلّلت '+cat(top)[1]+' 10% بس، هتوفّر '+fmt(bc[top]*.1*12)+' في السنة.']);
+    const odd=tx.filter(t=>t.type==='exp').map(t=>[t,unusual(t)]).filter(x=>x[1]).slice(0,3);odd.forEach(x=>ins.push(['😮',fmt(x[0].amount)+' على '+cat(x[0].cat)[1]+(x[0].note?' ('+x[0].note+')':'')+' — أعلى بكتير من المعتاد ('+fmt(x[1])+').']));
+    const wds=toks(tx.filter(t=>t.type==='exp').map(t=>t.note.replace(/🔁/g,'')).join(' ')).map(stem),fr={};wds.forEach(w=>fr[w]=(fr[w]||0)+1);const fw=Object.keys(fr).sort((a,b)=>fr[b]-fr[a])[0];
+    if(fw&&fr[fw]>=3){const tt=tx.filter(t=>t.type==='exp'&&toks(t.note).map(stem).includes(fw)).reduce((a,t)=>a+t.amount,0);ins.push(['🔎','«'+fw+'» اتكررت '+fr[fw]+' مرة الشهر ده بإجمالي '+fmt(tt)+'.']);}
+    const sm=tx.filter(t=>t.type==='exp'&&t.amount<50);if(sm.length>=5)ins.push(['🪙','المصاريف الصغيرة (أقل من 50) عددها '+sm.length+' وإجماليها '+fmt(sum(sm,'exp'))+' — الصغير بيتجمع!']);
+    if(cm3())ins.push(cm3());
+    if(ins.length)h='<div class="card"><h2>🧠 تحليلات ذكية</h2>'+ins.map(t=>'<div class="tip"><span class="e">'+t[0]+'</span><div>'+esc(t[1])+'</div></div>').join('')+'</div>'+h;}
+  return vRep()+h;}
+function cm3(){const f=forecast();if(f.projInc>0&&curYM()===ym(today())){const r=f.projSave/f.projInc;if(r>=.2)return ['🏆','بالمعدّل ده هتوفّر '+Math.round(r*100)+'% من دخلك — أداء ممتاز!'];if(r<0)return ['🚨','الشهر ده ماشي ناحية عجز '+fmt(-f.projSave)+' — وقّف الكماليات.'];}return null;}
+function drawWd(){const cv=$('cWd');if(!cv||!window.Charts)return;const from=addDays(today(),-90),wd=[0,0,0,0,0,0,0],wc=[0,0,0,0,0,0,0];for(let i=0;i<91;i++){const d=addDays(today(),-i);if(d<firstDate())break;wc[new Date(d+'T12:00').getDay()]++;}
+  S.tx.forEach(t=>{if(t.type==='exp'&&t.date>=from)wd[new Date(t.date+'T12:00').getDay()]+=t.amount;});const order=[6,0,1,2,3,4,5];const av=order.map(i=>wc[i]?wd[i]/wc[i]:0),mx=Math.max(...av);
+  window.Charts.bars(cv,av.map(v=>[[v,v===mx&&v>0?'#e11d48':'#14b8a6']]),i=>DAYS[order[i]].replace('ال',''));}
+function moreV3(){return '<div class="card smartbox"><button data-a="askOpen"><span>💬</span>اسأل تحويشة<small>مساعد ذكي أوفلاين</small></button><button data-a="affordOpen"><span>🤔</span>أقدر أشتريها؟<small>قرار شرا ذكي</small></button><button data-a="healthOpen"><span>❤️‍🩹</span>درجتك المالية<small>من 100</small></button><button data-a="gestures"><span>👆</span>الإيماءات<small>اسحب ودوس مطوّل</small></button></div>'+vMore();}
+function setV3(){const s=S.set,tg=(a,on,l)=>'<button data-a="'+a+'" aria-pressed="'+!!on+'">'+l+'</button>';
+  return vSet().replace('<div class="card"><h2>🧪 أخرى','<div class="card"><h2>👆 الإيماءات والاهتزاز</h2><div class="seg">'+tg('togSwipe',s.swipe,'👆 السحب '+(s.swipe?'شغال':'مقفول'))+tg('togHaptic',s.haptic,'📳 الاهتزاز '+(s.haptic?'شغال':'مقفول'))+'</div><p class="note">زرار/إيماءة الرجوع في الموبايل: بيقفل النافذة المفتوحة ← يرجع للصفحة اللي قبلها ← للرئيسية ← ولو دوست تاني بسرعة يخرج.</p><button class="btn sec sm" data-a="gestures">📖 دليل الإيماءات</button></div><div class="card"><h2>🧪 أخرى');}
+VIEWS.home[1]=homeV3;VIEWS.rep[1]=repV3;VIEWS.more[1]=moreV3;VIEWS.set[1]=setV3;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const haptic=ms=>{try{if(S.set.haptic!==false&&navigator.vibrate)navigator.vibrate(ms||10);}catch(e){}};
+Object.assign(A,{
+ quick:()=>{const i=$('qIn');if(!i)return;const p=parseQuick(i.value);if(!p.amount){toast('اكتب المبلغ — مثلاً: غدا 85');i.focus();return;}
+   const r={id:uid(),ts:Date.now(),type:p.type,amount:p.amount,cat:p.cat,wallet:S.wallets[0].id,note:p.note,date:p.date};S.tx.push(r);learnFrom(r);save();haptic(15);
+   const u=unusual(r);render();toast((p.type==='inc'?'⬆️ ':'⬇️ ')+cat(p.cat)[2]+' '+cat(p.cat)[1]+' · '+fmt(p.amount)+(u?' · 😮 أعلى من المعتاد':''),'تراجع',()=>{S.tx=S.tx.filter(x=>x.id!==r.id);save();render();});},
+ mic:()=>{if(!SR){toast('المتصفح مش بيدعم الصوت');return;}try{const r=new SR();r.lang='ar-EG';r.interimResults=false;r.onresult=e=>{const t=e.results[0][0].transcript;const i=$('qIn');if(i){i.value=t;i.dispatchEvent(new Event('input',{bubbles:true}));}};r.onerror=()=>toast('🎤 مقدرتش أسمعك — الصوت ممكن يحتاج نت');r.start();toast('🎤 اتكلم… مثلاً: «غدا خمسين جنيه»');haptic(20);}catch(e){toast('🎤 الصوت مش متاح');}},
+ askOpen:()=>askSheet(),ask:()=>doAsk(($('askIn')||{}).value),askChip:b=>doAsk(b.dataset.q),
+ affordOpen:()=>affordSheet(),
+ affordGo:()=>{const p=calcExpr($('afP').value),n=$('afN').value.trim();if(!p){toast('اكتب السعر');return;}const r=afford(p,n);const col={ok:'ok',mid:'wk',warn:'bad',no:'bad'}[r.v];
+   $('afR').innerHTML='<div class="banner '+col+'" style="display:block">'+r.L.map(esc).join('<br>')+'</div><div class="acts2"><button class="btn sec sm" data-a="afWish">🛒 حطها في الأمنيات</button><button class="btn sm" data-a="afBuy">اشتريتها — سجّلها</button></div>';haptic();},
+ afWish:()=>{const p=calcExpr($('afP').value),n=$('afN').value.trim()||'حاجة نفسي فيها';const w={id:uid(),name:n,emoji:'✨',price:p,added:today()};S.wish.push(w);save();closeSheet();render();toast('🛒 اتحطت في الأمنيات — استنى '+wishWait(w)+' يوم');},
+ afBuy:()=>{const p=calcExpr($('afP').value),n=$('afN').value.trim();addSheet({type:'exp',amount:p,note:n,cat:guessCat(n,'exp')||'shop'});},
+ healthOpen:()=>{const h=health();if(!h){toast('سجّل كام عملية الأول');return;}openSheet('<h3>❤️‍🩹 درجتك المالية</h3><div class="hs"><div class="ring big" style="--p:'+h.sc+';--c:'+h.g[1]+'"><b>'+h.sc+'</b></div><div class="t">'+h.g[0]+'<div class="note">محسوبة من آخر 3 شهور</div></div></div>'+h.P.map(p=>'<div class="item"><div class="row"><span class="n">'+p[0]+' '+p[1]+'</span><span class="chip">'+p[2]+'/'+p[3]+'</span></div><div class="s">'+esc(p[4])+'</div>'+bar(p[2]/p[3]*100)+'</div>').join('')+'<button class="btn sec" data-a="close" style="margin-top:12px">تمام</button>');},
+ subAdd:b=>{const x=detectSubs().find(s=>s.n===b.dataset.n);if(!x)return;const r={id:uid(),type:'exp',name:x.n,amount:x.a,cat:x.cat,wallet:x.w||S.wallets[0].id,freq:'monthly',day:+x.last.slice(8,10),active:true};r.next=nextDue(r,addDays(today(),1));S.recurring.push(r);save();render();toast('🔁 تمام — هتتسجّل لوحدها كل شهر');},
+ subNo:b=>{S.dismissSubs.push(AR(b.dataset.n));save();render();},
+ ghOk:()=>{S.set.gHint=true;save();render();},
+ togSwipe:()=>{S.set.swipe=!S.set.swipe;save();render();toast(S.set.swipe?'👆 السحب اشتغل':'السحب اتقفل');},
+ togHaptic:()=>{S.set.haptic=!S.set.haptic;save();render();haptic(30);},
+ gestures:()=>openSheet('<h3>👆 دليل الإيماءات</h3>'+[['↔️','اسحب يمين أو شمال في الصفحات الرئيسية عشان تتنقل بينها'],['⬅️','في أي صفحة فرعية: اسحب بالعرض عشان ترجع'],['🔙','زرار/إيماءة الرجوع في الموبايل: بيقفل النافذة ← يرجع ← للرئيسية ← دوستين ورا بعض = خروج'],['👈','اسحب أي عملية لشمال = حذف (وتقدر تتراجع)'],['👉','اسحب أي عملية ليمين = تعديل'],['✋','دوس مطوّل على عملية = تعديل، تكرار، قالب، حذف'],['⬇️','اسحب أي نافذة لتحت عشان تقفلها'],['👆👆','دبل كليك على الرصيد = إخفاء/إظهار الأرقام (خصوصية)'],['🎤','سجّل مصروف بصوتك من الشريط السريع'],['🧮','في خانة المبلغ تقدر تكتب عملية حسابية زي 45+30+12']].map(t=>'<div class="tip"><span class="e">'+t[0]+'</span><div>'+t[1]+'</div></div>').join('')+'<button class="btn" data-a="close" style="margin-top:12px">تمام</button>'),
+ lpEdit:b=>{closeSheet();A.txEdit(b);},
+ lpDup:b=>{const t=S.tx.find(x=>x.id===b.dataset.id);if(!t)return;const c=Object.assign({},t,{id:uid(),ts:Date.now(),date:today()});S.tx.push(c);save();closeSheet();render();toast('📄 اتكررت النهارده','تراجع',()=>{S.tx=S.tx.filter(x=>x.id!==c.id);save();render();});},
+ lpTpl:b=>{const t=S.tx.find(x=>x.id===b.dataset.id);if(!t)return;S.templates.push({id:uid(),type:t.type,cat:t.cat,amount:t.amount,note:t.note,wallet:t.wallet});save();closeSheet();toast('⭐ اتحفظت كقالب سريع');},
+ lpDel:b=>{closeSheet();A.txDel(b);},
+ hideToggle:()=>{S.set.hide=!S.set.hide;save();render();haptic(15);toast(S.set.hide?'🙈 الأرقام مخفية':'👁 الأرقام ظاهرة');}
+});
+function lpSheet(id){const t=S.tx.find(x=>x.id===id);if(!t)return;haptic(35);const c=t.type==='tr'?['','تحويل','🔄']:cat(t.cat);
+  openSheet('<h3>'+c[2]+' '+esc(c[1])+' · '+fmt(t.amount)+'</h3><p class="note">'+dName(t.date)+(t.note?' · '+esc(t.note):'')+'</p><div class="lpm"><button data-a="lpEdit" data-id="'+id+'">✏️ تعديل</button><button data-a="lpDup" data-id="'+id+'">📄 كررها النهارده</button>'+(t.type!=='tr'?'<button data-a="lpTpl" data-id="'+id+'">⭐ احفظها قالب</button>':'')+'<button data-a="lpDel" data-id="'+id+'" class="dng">🗑 حذف</button></div><button class="btn sec" data-a="close">إلغاء</button>');}
+// ---------- 🔙 زرار الرجوع
+let guarded=false,exitT=0;
+const sheetOn=()=>$('sheetBg').classList.contains('on');
+function guard(){if(guarded||!window.history||!history.pushState)return;try{history.pushState({tw:1},'');guarded=true;}catch(e){}}
+function backAction(){if(!$('lock').classList.contains('hidden'))return false;
+  if(sheetOn()){closeSheet();return true;}
+  if(view==='tx'&&ui.txDay){ui.txDay='';render();return true;}
+  if(!MAIN.includes(view)){go('more');return true;}
+  if(view!=='home'){go('home');return true;}
+  return false;}
+if(window.history&&history.replaceState){try{history.replaceState({tw:0},'');}catch(e){}guard();
+  window.addEventListener('popstate',()=>{guarded=false;if(backAction()){haptic();guard();return;}
+    toast('👋 اضغط رجوع تاني عشان تخرج');clearTimeout(exitT);exitT=setTimeout(()=>{exitT=0;guard();},2200);});}
+document.addEventListener('click',()=>{if(!guarded){clearTimeout(exitT);exitT=0;guard();}},true);
+if($('eyeBtn'))$('eyeBtn').onclick=()=>A.hideToggle();
+// ---------- 👆 السحب والدوس المطوّل
+let tS=null,lpT=0,lastTap=0;
+const skipEl=el=>!!(el.closest&&el.closest('input,textarea,select,canvas,.tpls,.seg,.cats,.keypad,.chat,.qchips,.cal'));
+document.addEventListener('touchstart',e=>{clearTimeout(lpT);if(e.touches.length!==1){tS=null;return;}const t=e.touches[0],el=e.target;
+  const row=el.closest&&el.closest('.tx[data-id]');tS={x:t.clientX,y:t.clientY,t:Date.now(),row:row,inSheet:!!(el.closest&&el.closest('#sheet')),skip:skipEl(el),top:$('sheet').scrollTop<=0,kpi:!!(el.closest&&el.closest('.kpi.big'))};
+  if(row&&!tS.inSheet)lpT=setTimeout(()=>{if(tS&&!tS.moved){tS.lp=1;lpSheet(row.dataset.id);}},560);},{passive:true});
+document.addEventListener('touchmove',e=>{if(!tS)return;const t=e.touches[0],dx=t.clientX-tS.x,dy=t.clientY-tS.y;if(Math.abs(dx)>10||Math.abs(dy)>10){tS.moved=1;clearTimeout(lpT);}
+  if(tS.inSheet){if(tS.top&&!tS.skip&&dy>0&&dy>Math.abs(dx)){const sh=$('sheet');sh.style.transition='none';sh.style.transform='translateY('+dy+'px)';tS.drag=1;}return;}
+  if(S.set.swipe&&tS.row&&!tS.skip&&(tS.rowDrag||(Math.abs(dx)>14&&Math.abs(dx)>Math.abs(dy)*1.4))){tS.rowDrag=1;const r=tS.row;r.style.transition='none';r.style.transform='translateX('+dx+'px)';r.classList.toggle('sw-del',dx<-30);r.classList.toggle('sw-edit',dx>30);}},{passive:true});
+document.addEventListener('touchend',e=>{clearTimeout(lpT);if(!tS)return;const s=tS;tS=null;const t=e.changedTouches[0],dx=t.clientX-s.x,dy=t.clientY-s.y,dt=Date.now()-s.t,W=window.innerWidth||360;
+  if(s.lp){e.preventDefault();return;}
+  if(s.inSheet){const sh=$('sheet');sh.style.transition='';if(s.drag&&dy>110){haptic();closeSheet();}sh.style.transform='';return;}
+  if(s.rowDrag){const r=s.row,id=r.dataset.id;r.style.transition='';r.style.transform='';r.classList.remove('sw-del','sw-edit');
+    const TH=Math.min(W*.3,140);if(dx<-TH){haptic(25);A.txDel({dataset:{id:id}});}else if(dx>TH){haptic();A.txEdit({dataset:{id:id}});}return;}
+  if(s.kpi&&!s.moved&&dt<300){const n=Date.now();if(n-lastTap<350){lastTap=0;e.preventDefault();A.hideToggle();return;}lastTap=n;}
+  if(!S.set.swipe||s.skip||sheetOn()||Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.7||dt>800)return;
+  if(MAIN.includes(view)){const j=MAIN.indexOf(view)+(dx>0?1:-1);if(j>=0&&j<MAIN.length){haptic();if(MAIN[j]==='tx')ui.txDay='';go(MAIN[j]);$('view').classList.remove('sl','sr');void $('view').offsetWidth;$('view').classList.add(dx>0?'sl':'sr');}}
+  else if(Math.abs(dx)>90){haptic();go('more');}},{passive:false});
+document.addEventListener('contextmenu',e=>{const r=e.target.closest&&e.target.closest('.tx[data-id]');if(r){e.preventDefault();lpSheet(r.dataset.id);}});
+document.addEventListener('dblclick',e=>{if(e.target.closest&&e.target.closest('.kpi.big'))A.hideToggle();});
+// ---------- ⌨️ ذكاء الإدخال
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.id==='qIn'){const p=parseQuick(t.value),pv=$('qPrev');if(pv)pv.innerHTML=t.value.trim()?(p.amount?'هيتسجّل: '+cat(p.cat)[2]+' '+esc(cat(p.cat)[1])+' · <b class="'+(p.type==='inc'?'pos':'neg')+'">'+(p.type==='inc'?'+':'−')+fmt(p.amount)+'</b> · '+(p.date===today()?'النهارده':dName(p.date))+(p.note?' · '+esc(p.note):''):'✍️ اكتب المبلغ كمان'):'';}
+  else if(t.id==='nN'&&nt.type!=='tr'&&!nt.catTouched&&!nt.edit){const g=guessCat(t.value,nt.type);const b=g&&$('sheet').querySelector('[data-a=ntCat][data-v="'+g+'"]');if(b&&nt.cat!==g){nt.cat=g;b.parentNode.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));let hn=$('aiHint');if(!hn){hn=document.createElement('div');hn.id='aiHint';hn.className='qprev';t.parentNode.insertBefore(hn,t.nextSibling);}hn.textContent='🧠 اخترتلك «'+cat(g)[1]+'» تلقائي';}}
+  else if(t.id==='nA'||t.id==='afP'){let hn=$(t.id+'Calc');const has=/[+\-*/×÷]/.test(t.value.replace(/^-/,''));if(has){if(!hn){hn=document.createElement('div');hn.id=t.id+'Calc';hn.className='qprev';t.parentNode.insertBefore(hn,t.nextSibling);}hn.textContent='🧮 = '+fmt(calcExpr(t.value));}else if(hn)hn.remove();}});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;if(e.target.id==='qIn'){e.preventDefault();A.quick();}else if(e.target.id==='askIn'){e.preventDefault();e.stopPropagation();A.ask();}},true);
+
 // ---------- events
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b){if(e.target===$('sheetBg'))closeSheet();return;}
   if(b.dataset.tab){if(b.dataset.tab==='tx')ui.txDay='';go(b.dataset.tab);return;}

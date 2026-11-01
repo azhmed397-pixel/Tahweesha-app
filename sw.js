@@ -1,5 +1,5 @@
 /* تحويشة — Service Worker: بيخلّي التطبيق يشتغل أوفلاين */
-const CACHE='tahweesha-v2.0.1';
+const CACHE='tahweesha-v3.0.0';
 const FILES=['./','./index.html','./style.css','./app.js','./charts.js','./manifest.json','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
