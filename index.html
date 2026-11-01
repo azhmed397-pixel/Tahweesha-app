@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="description" content="تحويشة — مساعدك الشخصي للتوفير وإدارة المصاريف، بيشتغل أوفلاين">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="تحويشة">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+<title>تحويشة — مساعدك للتوفير</title>
+</head>
+<body>
+<div id="lock" class="lock hidden" role="dialog" aria-label="قفل التطبيق">
+  <div class="lock-in"><div class="lock-logo">💰</div><h2>تحويشة</h2><p>اكتب الرقم السري</p>
+  <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
+  <div class="keypad" id="keypad"></div></div>
+</div>
+<div class="app">
+<header class="top" id="top">
+  <div class="hrow"><button class="hbtn hidden" id="back" aria-label="رجوع">→</button><h1 id="title">💰 تحويشة</h1><button class="hbtn" id="themeBtn" aria-label="تغيير الوضع">🌓</button></div>
+  <div class="sub" id="greet">مساعدك الشخصي للتوفير</div>
+  <div class="mon" id="monBar"><button id="mPrev" aria-label="الشهر اللي فات">›</button><b id="mLbl"></b><button id="mNext" aria-label="الشهر الجاي">‹</button></div>
+</header>
+<main id="view"></main>
+</div>
+<button class="fab" id="fab" aria-label="إضافة عملية">+</button>
+<nav class="tabs" role="tablist"><div class="in">
+ <button role="tab" data-tab="home" aria-selected="true"><span>🏠</span>الرئيسية</button>
+ <button role="tab" data-tab="tx"><span>🧾</span>العمليات</button>
+ <button role="tab" data-tab="rep"><span>📈</span>التقارير</button>
+ <button role="tab" data-tab="more"><span>🧰</span>المزيد</button>
+</div></nav>
+<div class="sheet-bg" id="sheetBg"><div class="sheet" role="dialog" aria-modal="true" id="sheet"></div></div>
+<div class="toast" id="toast" role="status"><span id="toastMsg"></span><button id="toastBtn" class="hidden"></button></div>
+<script src="charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
