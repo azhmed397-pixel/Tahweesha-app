@@ -102,7 +102,7 @@ function go(v){view=v;window.scrollTo&&window.scrollTo(0,0);render();}
 function render(){const V=VIEWS[view];$('title').textContent=V[0];$('back').classList.toggle('hidden',MAIN.includes(view));$('greet').classList.toggle('hidden',view!=='home');
   $('monBar').classList.toggle('hidden',!V[2]);$('top').classList.toggle('small',!V[2]);$('mLbl').textContent=MONTHS[cur.getMonth()]+' '+cur.getFullYear();
   const tab=MAIN.includes(view)?view:'more';document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
-  $('view').innerHTML=V[1]();if(view==='rep')drawRep();}
+  const pv=prep();$('view').innerHTML=V[1]();if(view==='rep')drawRep();post(pv);}
 // ---------- view parts
 const empty=(e,t)=>'<div class="empty"><span class="e">'+e+'</span>'+t+'</div>';
 const bar=(p,col)=>'<div class="bar"><i style="width:'+Math.max(0,Math.min(100,p))+'%;'+(col?'background:'+col:'')+'"></i></div>';
@@ -233,8 +233,8 @@ function vSet(){const s=S.set;let h='<div class="card"><h2>🎨 الشكل</h2><
   h+='<div class="card"><h2>🧪 أخرى</h2><button class="btn sec" data-a="demo">ضيف بيانات تجريبية</button><button class="btn dng" data-a="wipe" style="margin-top:10px">🗑 مسح كل البيانات</button><p class="note">'+S.tx.length+' عملية · '+S.goals.length+' هدف · نسخة '+VERSION+(canStore?'':' · ⚠️ الحفظ مش متاح هنا')+'</p></div>';
   return h;}
 // ---------- sheets
-function openSheet(h){$('sheet').innerHTML=h;$('sheetBg').classList.add('on');const f=$('sheet').querySelector('input:not([type=checkbox]):not([type=date])');if(f)setTimeout(()=>{try{f.focus();}catch(e){}},80);}
-function closeSheet(){$('sheetBg').classList.remove('on');}
+function openSheet(h){clearTimeout(shT);$('sheetBg').classList.remove('out');$('sheet').style.transform='';$('sheet').innerHTML=h;$('sheetBg').classList.add('on');const f=$('sheet').querySelector('input:not([type=checkbox]):not([type=date])');if(f)setTimeout(()=>{try{f.focus();}catch(e){}},80);}
+var shT;function closeSheet(){const b=$('sheetBg');if(!b.classList.contains('on')||b.classList.contains('out'))return;b.classList.add('out');clearTimeout(shT);shT=setTimeout(()=>b.classList.remove('on','out'),RM?0:220);}
 const F=(id,label,attrs)=>'<label class="f" for="'+id+'">'+label+'</label><input class="inp" id="'+id+'" '+(attrs||'')+'>';
 const actions=(saveA,label)=>'<div class="acts"><button class="btn" data-a="'+saveA+'">'+(label||'حفظ')+'</button><button class="btn sec" data-a="close">إلغاء</button></div>';
 const walSel=(id,v)=>'<select class="inp" id="'+id+'">'+S.wallets.map(w=>'<option value="'+w.id+'"'+(w.id===v?' selected':'')+'>'+esc(w.emoji+' '+w.name)+'</option>').join('')+'</select>';
@@ -282,7 +282,7 @@ const A={
  goalSave:()=>{const n=$('gN').value.trim(),t=num($('gT').value);if(!n||!t){toast('اكتب اسم الهدف والمبلغ');return;}const d={name:n,emoji:$('gE').value.trim()||'🎯',target:t,saved:num($('gS').value),deadline:$('gD').value||''},id=$('gId').value;
    if(id)Object.assign(S.goals.find(x=>x.id===id),d);else S.goals.push(Object.assign({id:uid()},d));save();closeSheet();render();toast('🎯 اتحفظ');},
  goalMoney:b=>{const g=S.goals.find(x=>x.id===b.dataset.id),s=+b.dataset.s;openSheet('<h3>'+(s>0?'💰 حوّش لـ ':'↩️ سحب من ')+esc(g.name)+'</h3>'+F('mA','المبلغ','class="inp amt" inputmode="decimal" placeholder="0"')+actions('goalMoneySave','تأكيد'));$('sheet').dataset.id=g.id;$('sheet').dataset.s=s;},
- goalMoneySave:()=>{const g=S.goals.find(x=>x.id===$('sheet').dataset.id),v=num($('mA').value);if(!v){toast('اكتب المبلغ');return;}const was=g.saved>=g.target;g.saved=Math.max(0,g.saved+v*(+$('sheet').dataset.s));save();closeSheet();render();toast(!was&&g.saved>=g.target?'🎉 مبروك! حققت هدف '+g.name:'✅ اتحدّث');},
+ goalMoneySave:()=>{const g=S.goals.find(x=>x.id===$('sheet').dataset.id),v=num($('mA').value);if(!v){toast('اكتب المبلغ');return;}const was=g.saved>=g.target;g.saved=Math.max(0,g.saved+v*(+$('sheet').dataset.s));save();closeSheet();render();const hit=!was&&g.saved>=g.target;if(hit)confetti();toast(hit?'🎉 مبروك! حققت هدف '+g.name:'✅ اتحدّث');},
  goalDel:b=>{if(confirmIt('تحذف الهدف ده؟')){S.goals=S.goals.filter(x=>x.id!==b.dataset.id);save();render();}},
  budgetAuto:()=>{const m=ym(today());const tot={};let c=0;for(let k=1;k<=3;k++){const bc=byCat(monthTx(prevYM(m,k)));if(Object.keys(bc).length)c++;for(const x in bc)tot[x]=(tot[x]||0)+bc[x];}
    if(!c){const bc=byCat(monthTx(m));for(const x in bc)tot[x]=bc[x];c=1;}if(!Object.keys(tot).length){toast('سجّل مصاريف الأول علشان أقترح');return;}
@@ -291,7 +291,7 @@ const A={
  dKind:b=>b.parentNode.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)),
  debtSave:()=>{const p=$('dP').value.trim(),a=num($('dA').value);if(!p||!a){toast('اكتب الاسم والمبلغ');return;}const k=$('dk').querySelector('[aria-pressed=true]').dataset.v;S.debts.push({id:uid(),kind:k,person:p,amount:a,paid:0,due:$('dD').value||'',note:$('dN').value.trim(),added:today()});save();closeSheet();render();toast('✅ اتسجّل');},
  debtPay:b=>{const d=S.debts.find(x=>x.id===b.dataset.id);openSheet('<h3>سداد جزء — '+esc(d.person)+'</h3><p class="note">فاضل '+fmt(d.amount-d.paid)+'</p>'+F('pA','المبلغ اللي اتسدد','class="inp amt" inputmode="decimal" placeholder="0"')+actions('debtPaySave','تأكيد'));$('sheet').dataset.id=d.id;},
- debtPaySave:()=>{const d=S.debts.find(x=>x.id===$('sheet').dataset.id),v=num($('pA').value);if(!v){toast('اكتب المبلغ');return;}d.paid=Math.min(d.amount,d.paid+v);save();closeSheet();render();toast(d.paid>=d.amount?'🎉 الدين اتقفل!':'✅ اتسجّل');},
+ debtPaySave:()=>{const d=S.debts.find(x=>x.id===$('sheet').dataset.id),v=num($('pA').value);if(!v){toast('اكتب المبلغ');return;}d.paid=Math.min(d.amount,d.paid+v);save();closeSheet();render();if(d.paid>=d.amount)confetti();toast(d.paid>=d.amount?'🎉 الدين اتقفل!':'✅ اتسجّل');},
  debtFull:b=>{const d=S.debts.find(x=>x.id===b.dataset.id);d.paid=d.amount;save();render();toast('🎉 الدين اتقفل!');},
  debtDel:b=>{if(confirmIt('تحذف ده؟')){S.debts=S.debts.filter(x=>x.id!==b.dataset.id);save();render();}},
  walNew:()=>openSheet('<h3>👛 محفظة جديدة</h3>'+F('wN','الاسم','maxlength="25" placeholder="مثلاً: فودافون كاش"')+'<div class="grid2">'+F('wE','إيموجي','maxlength="4" value="💳"')+F('wS','الرصيد الحالي','inputmode="decimal" value="0" style="direction:ltr"')+'</div><input type="hidden" id="wId">'+actions('walSave')),
@@ -595,3 +595,16 @@ const hr=new Date().getHours();$('greet').textContent=(hr<12?'صباح الخي�
 applyTheme();runRecurring();render();lockScreen();
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 })();
+
+/* ===== v3.2 — حركات وانتقالات ===== */
+var RM=matchMedia('(prefers-reduced-motion: reduce)').matches,_lv=null;
+function numNodes(){const cu=S.set.currency||'ج',re=/^([+−-]?)([\d,]+(?:\.\d+)?)( .+)$/,w=document.createTreeWalker($('view'),NodeFilter.SHOW_TEXT),r=[];let n;while((n=w.nextNode())&&r.length<60){const m=re.exec(n.nodeValue.trim());if(m&&m[3].trim()===cu)r.push({node:n,val:parseFloat(m[2].replace(/,/g,'')),pre:m[1],suf:m[3]});}return r;}
+function prep(){const v=$('view');return{ch:view!==_lv,w:[...v.querySelectorAll('.bar>i')].map(i=>i.style.width),n:numNodes().map(o=>o.val)};}
+function cnt(o,from){const t0=performance.now(),to=o.val;(function f(t){const k=Math.min(1,(t-t0)/800),v=from+(to-from)*(1-Math.pow(1-k,4));o.node.nodeValue=o.pre+(k<1?Math.round(v*100)/100:to).toLocaleString('en-US',{maximumFractionDigits:2})+o.suf;if(k<1)requestAnimationFrame(f);})(t0);}
+function post(pv){const v=$('view'),ch=pv.ch;_lv=view;moveInd();if(RM)return;
+ if(ch){v.classList.remove('pg');void v.offsetWidth;v.classList.add('pg');}
+ const bs=v.querySelectorAll('.bar>i');bs.forEach((i,k)=>{const t=i.style.width,o=ch?'0%':(pv.w.length===bs.length?pv.w[k]:t);if(o!==t){i.style.transition='none';i.style.width=o;void i.offsetWidth;i.style.transition='';i.style.width=t;}});
+ const ns=numNodes();ns.forEach((o,k)=>{const f=ch?0:(pv.n.length===ns.length?pv.n[k]:o.val);if(f!==o.val)cnt(o,f);});}
+function moveInd(){const n=document.querySelector('.tabs .in'),b=n&&n.querySelector('[aria-selected=true]');if(!b)return;let i=n.querySelector('.ind');if(!i){i=document.createElement('i');i.className='ind';n.prepend(i);}i.style.width=b.offsetWidth+'px';i.style.height=b.offsetHeight+'px';i.style.transform='translate('+b.offsetLeft+'px,'+b.offsetTop+'px)';}
+addEventListener('resize',moveInd);addEventListener('load',moveInd);
+function confetti(){if(RM)return;const c=document.createElement('canvas');c.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:90';c.width=innerWidth;c.height=innerHeight;document.body.appendChild(c);const x=c.getContext('2d'),cl=['#14b8a6','#f59e0b','#ec4899','#6366f1','#22c55e','#f97316'],P=Array.from({length:110},()=>({x:c.width/2,y:c.height*.62,vx:(Math.random()-.5)*14,vy:-Math.random()*16-6,s:5+Math.random()*6,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:cl[Math.random()*6|0]}));let t=0;(function f(){x.clearRect(0,0,c.width,c.height);t++;P.forEach(p=>{p.vy+=.42;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);x.restore();});if(t<110)requestAnimationFrame(f);else c.remove();})();}

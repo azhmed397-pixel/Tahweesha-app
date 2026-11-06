@@ -143,3 +143,35 @@ canvas{width:100%;display:block}
 .kpi.big{cursor:pointer;user-select:none;-webkit-user-select:none}
 
 .hx{display:flex;justify-content:space-between;align-items:center}
+
+/* ===== v3.2 — حركات وانتقالات (ستايل آبل) ===== */
+.app{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+.tabs{left:0;right:0;margin:0 auto;width:calc(100% - 24px);max-width:560px;bottom:calc(10px + env(safe-area-inset-bottom));border:1px solid rgba(255,255,255,.28);border-radius:28px;padding:6px;background:color-mix(in srgb,var(--card) 74%,transparent);-webkit-backdrop-filter:saturate(1.8) blur(22px);backdrop-filter:saturate(1.8) blur(22px);box-shadow:0 14px 36px rgba(0,0,0,.18)}
+.tabs .in{position:relative;padding:0;max-width:none}
+.tabs button{position:relative;z-index:1;transition:transform .35s cubic-bezier(.3,1.5,.5,1),color .3s}
+.tabs button[aria-selected=true]{background:transparent}
+.tabs button:active{transform:scale(.92)}
+.tabs button[aria-selected=true] span{animation:pop .55s cubic-bezier(.3,1.6,.5,1)}
+.tabs .ind{position:absolute;left:0;top:0;border-radius:20px;background:var(--prisoft);box-shadow:inset 0 0 0 1px rgba(15,118,110,.12);transition:transform .5s cubic-bezier(.3,1.35,.5,1),width .5s cubic-bezier(.3,1.35,.5,1)}
+@keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.28)}100%{transform:scale(1)}}
+.fab{left:calc(50% - 29px);bottom:calc(92px + env(safe-area-inset-bottom));animation:fabIn .6s cubic-bezier(.3,1.6,.5,1) both,bob 3.6s ease-in-out 1s infinite;transition:box-shadow .3s}
+.fab:active{animation:none;transform:scale(.88)}
+@keyframes fabIn{from{transform:scale(0) rotate(-90deg)}to{transform:none}}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.btn,.hbtn{transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
+.btn:active,.hbtn:active{transform:scale(.95)}
+.bar>i{transition:width .9s cubic-bezier(.22,1,.36,1)}
+#view.pg>*{animation:rise .55s cubic-bezier(.2,.9,.3,1) both}
+#view.pg>*:nth-child(2){animation-delay:55ms}#view.pg>*:nth-child(3){animation-delay:110ms}#view.pg>*:nth-child(4){animation-delay:165ms}#view.pg>*:nth-child(5){animation-delay:220ms}#view.pg>*:nth-child(6){animation-delay:275ms}#view.pg>*:nth-child(7){animation-delay:330ms}#view.pg>*:nth-child(8){animation-delay:385ms}
+@keyframes rise{from{transform:translateY(22px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+.sheet-bg{background:rgba(5,12,10,.38);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
+.sheet-bg.on{animation:fadeIn .3s both}
+.sheet{animation:sheetIn .5s cubic-bezier(.2,.9,.25,1.04)}
+.sheet-bg.out{animation:fadeOut .22s both}
+.sheet-bg.out .sheet{animation:sheetOut .22s ease-in both}
+@keyframes fadeIn{from{opacity:0}}
+@keyframes fadeOut{to{opacity:0}}
+@keyframes sheetIn{from{transform:translateY(100%)}}
+@keyframes sheetOut{to{transform:translateY(100%)}}
+.toast{transition:transform .5s cubic-bezier(.3,1.5,.5,1)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
